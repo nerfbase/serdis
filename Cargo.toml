@@ -12,5 +12,6 @@ clap = { version = "4.4.6", features = [
     "derive",
     "std",
 ], default-features = false }
+dashmap = { version = "5.5.3", default-features = false }
 rustls = { version = "0.20.7", default-features = false }
 rustls-pemfile = { version = "1.0.3", default-features = false }

@@ -1,12 +1,15 @@
 //! Serdis - Service Discovery
 
+extern crate actix_web;
 extern crate std;
 
 mod certs;
 mod cli;
 mod cnf;
+mod db;
 mod net;
 
+use actix_web::rt::System;
 use std::{future::Future, process::ExitCode};
 
 fn main() -> ExitCode {
@@ -14,5 +17,5 @@ fn main() -> ExitCode {
 }
 
 fn init<T>(fut: impl Future<Output = T>) -> T {
-    actix_web::rt::System::new().block_on(fut)
+    System::new().block_on(fut)
 }

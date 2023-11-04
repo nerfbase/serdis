@@ -5,8 +5,12 @@ extern crate std;
 
 mod tls;
 
-use crate::cli::start::StartCommandArguments;
-use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
+use crate::{cli::start::StartCommandArguments, db::DB};
+use actix_web::{
+    middleware,
+    web::{self, Data},
+    App, HttpResponse, HttpServer, Responder,
+};
 use std::error::Error;
 use tls::tls_cfg;
 
@@ -18,10 +22,13 @@ pub async fn init(
         no_banner: _,
     }: StartCommandArguments,
 ) -> Result<(), Box<dyn Error>> {
-    let server = HttpServer::new(|| {
+    let db = Data::new(DB::new());
+
+    let server = HttpServer::new(move || {
         App::new()
             .service(web::scope("/api").route("test", web::get().to(test)))
             .wrap(middleware::NormalizePath::default())
+            .app_data(db.clone())
     });
 
     if let (Some(crt), Some(key)) = (&cert_file, &key_file) {
