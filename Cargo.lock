@@ -1022,6 +1022,8 @@ dependencies = [
  "dashmap",
  "rustls 0.20.9",
  "rustls-pemfile",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

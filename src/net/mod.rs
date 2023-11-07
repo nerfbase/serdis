@@ -3,9 +3,11 @@
 extern crate actix_web;
 extern crate std;
 
+mod handler;
 mod tls;
 
-use crate::{cli::start::StartCommandArguments, db::DB};
+use self::handler::{deregister, info, register};
+use super::{cli::start::StartCommandArguments, db::DB};
 use actix_web::{
     middleware,
     web::{self, Data},
@@ -26,7 +28,13 @@ pub async fn init(
 
     let server = HttpServer::new(move || {
         App::new()
-            .service(web::scope("/api").route("test", web::get().to(test)))
+            .service(
+                web::scope("/api")
+                    .route("test", web::get().to(test))
+                    .route("register", web::post().to(register))
+                    .route("info", web::get().to(info))
+                    .route("deregister", web::delete().to(deregister)),
+            )
             .wrap(middleware::NormalizePath::default())
             .app_data(db.clone())
     });
