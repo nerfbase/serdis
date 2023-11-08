@@ -3,7 +3,15 @@
 extern crate clap;
 extern crate std;
 
-use crate::{cli::validator, cnf::LOGO, net};
+use crate::{
+    cli::validator,
+    cnf::LOGO,
+    db::{
+        backend::surreal_impl::{self, SurrealDB},
+        Datastore,
+    },
+    net,
+};
 use clap::Args;
 use std::{error::Error, path::PathBuf};
 
@@ -25,6 +33,14 @@ pub struct StartCommandArguments {
     #[arg(help = "Hide the startup banner")]
     #[arg(default_value_t = false)]
     pub no_banner: bool,
+
+    #[arg(long)]
+    #[arg(help = "Database name")]
+    pub db_name: Option<String>,
+
+    #[arg(long)]
+    #[arg(help = "Database namespace")]
+    pub db_ns: Option<String>,
 }
 
 pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
@@ -33,8 +49,19 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
         println!("{LOGO}");
     }
 
+    // start the database
+    let db = match (&args.db_name, &args.db_ns) {
+        (Some(name), Some(ns)) => surreal_impl::connect(Some(name), Some(ns)).await,
+        (Some(name), None) => surreal_impl::connect(Some(name), None).await,
+        (None, Some(ns)) => surreal_impl::connect(None, Some(ns)).await,
+        (None, None) => surreal_impl::connect(None, None).await,
+    }?;
+
+    // setup the datastore
+    let store = Datastore(SurrealDB(&db));
+
     // start the server
-    net::init(args).await?;
+    net::init::<SurrealDB>(args, store).await?;
 
     Ok(())
 }

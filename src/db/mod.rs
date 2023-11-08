@@ -1,73 +1,96 @@
-//! In-Memory Persistence
+//! Database
 
-extern crate dashmap;
+extern crate async_trait;
 extern crate std;
 
+pub mod backend;
 pub mod model;
 
-use self::model::Insert;
-use dashmap::DashMap;
+use self::{backend::Backend, model::Insert};
+use async_trait::async_trait;
 use std::error::Error;
 
-#[derive(Debug, Default)]
-pub struct DB {
-    pub store: DashMap<String, Insert>,
-}
+#[derive(Debug)]
+pub struct Datastore<T: Backend>(pub T);
 
-impl DB {
-    pub fn new() -> Self {
-        Self::default()
+#[async_trait]
+impl<T> Backend for Datastore<T>
+where
+    T: Backend + Sync + Send,
+{
+    async fn set(&self, key: String, val: Insert) -> Result<(), Box<dyn Error>> {
+        self.0.set(key, val).await
     }
 
-    pub fn set(&self, key: String, val: Insert) -> Result<(), Box<dyn Error>> {
-        match self.store.insert(key, val) {
-            Some(_) => Err("Key already exists".into()),
-            None => Ok(()),
-        }
+    async fn get(&self, key: &str) -> Result<Vec<Insert>, Box<dyn Error>> {
+        self.0.get(key).await
     }
 
-    pub fn get(&self, key: &str) -> Result<Insert, Box<dyn Error>> {
-        match self.store.get(key) {
-            Some(value_ref) => Ok(value_ref.value().clone()),
-            None => Err("No key found!".into()),
-        }
-    }
-
-    pub fn del(&self, key: &str) -> Result<(), Box<dyn Error>> {
-        match self.store.remove(key) {
-            Some(_) => Ok(()),
-            None => Err("No key exists".into()),
-        }
+    async fn del(&self, key: &str) -> Result<(), Box<dyn Error>> {
+        self.0.del(key).await
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::db::model::{Insert, MetaData};
+    use actix_web::rt::System;
 
-    use super::DB;
+    use crate::db::{
+        backend::{
+            surreal_impl::{self, SurrealDB},
+            Backend,
+        },
+        model::{Insert, MetaData},
+        Datastore,
+    };
 
     #[test]
-    fn test_db_basic() {
-        let db = DB::new();
+    fn test_db_connection() {
+        System::new().block_on(async {
+            let db = surreal_impl::connect(Some(&"name".into()), Some(&"ns".into())).await;
+            assert!(db.is_ok())
+        });
+    }
 
-        let model = Insert {
-            name: "server-001".to_string(),
-            ip: "192.168.1.100".to_string(),
-            port: 8080,
-            health: "ok".to_string(),
-            metadata: Some(MetaData {
-                env: Some("prod".to_string()),
-                version: Some("1.0.1".to_string()),
-                region: Some("us-east".to_string()),
-                team: Some("ops".to_string()),
-                tags: Some(vec!["web".to_string(), "backend".to_string()]),
-            }),
-        };
+    #[test]
+    fn test_db_insert_retrieve_delete() {
+        System::new().block_on(async {
+            let db = surreal_impl::connect(Some(&"name".into()), Some(&"ns".into()))
+                .await
+                .unwrap();
 
-        db.set("service-001".to_string(), model.clone()).unwrap();
+            let model = Insert {
+                name: "service-xyz".into(),
+                ip: "192.168.1.100".into(),
+                port: 8080,
+                health: "ok".into(),
+                metadata: Some(MetaData {
+                    env: Some("prod".into()),
+                    version: Some("1.0.1".into()),
+                    region: Some("us-east".into()),
+                    team: Some("ops".into()),
+                    tags: Some(vec!["web".into(), "backend".into()]),
+                }),
+            };
 
-        assert_eq!(db.get("service-001").unwrap(), model);
-        assert!(db.del("service-001").is_ok());
+            let backend = SurrealDB(&db);
+            let store = Datastore(backend);
+
+            // Test data insertion
+            let setter = store.set("service-xyz".into(), model.clone()).await;
+            assert!(setter.is_ok());
+
+            // Test data retrieval
+            let getter = store.get("service-xyz").await;
+            assert_eq!(getter.unwrap(), vec![model]);
+
+            // Test data deletion
+            let delete = store.del("service-xyz").await;
+            assert!(delete.is_ok());
+
+            // Test data retrieval after deletion
+            let get_deleted = store.get("service-xyz").await;
+            assert_eq!(get_deleted.unwrap(), vec![]);
+        });
     }
 }

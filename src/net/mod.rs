@@ -7,7 +7,10 @@ mod handler;
 mod tls;
 
 use self::handler::{deregister, info, register};
-use super::{cli::start::StartCommandArguments, db::DB};
+use super::{
+    cli::start::StartCommandArguments,
+    db::{backend::Backend, Datastore},
+};
 use actix_web::{
     middleware,
     web::{self, Data},
@@ -16,27 +19,30 @@ use actix_web::{
 use std::error::Error;
 use tls::tls_cfg;
 
-pub async fn init(
+pub async fn init<T: Backend>(
     StartCommandArguments {
         port,
         cert_file,
         key_file,
         no_banner: _,
+        db_name: _,
+        db_ns: _,
     }: StartCommandArguments,
-) -> Result<(), Box<dyn Error>> {
-    let db = Data::new(DB::new());
 
+    backend: Datastore<T>,
+) -> Result<(), Box<dyn Error>> {
+    let store = Data::new(backend);
     let server = HttpServer::new(move || {
         App::new()
             .service(
                 web::scope("/api")
                     .route("test", web::get().to(test))
-                    .route("register", web::post().to(register))
-                    .route("info", web::get().to(info))
-                    .route("deregister", web::delete().to(deregister)),
+                    .route("register", web::post().to(register::<T>))
+                    .route("info", web::get().to(info::<T>))
+                    .route("deregister", web::delete().to(deregister::<T>)),
             )
             .wrap(middleware::NormalizePath::default())
-            .app_data(db.clone())
+            .app_data(store.clone())
     });
 
     if let (Some(crt), Some(key)) = (&cert_file, &key_file) {

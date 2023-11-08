@@ -4,8 +4,9 @@ extern crate actix_web;
 extern crate std;
 
 use crate::db::{
+    backend::Backend,
     model::{Insert, Parameter},
-    DB,
+    Datastore,
 };
 use actix_web::{
     web::{Data, Json, Query},
@@ -13,24 +14,27 @@ use actix_web::{
 };
 use std::collections::HashMap;
 
-pub async fn register(payload: Json<Insert>, db: Data<DB>) -> impl Responder {
-    if let Err(error) = db.set(payload.name.to_owned(), payload.0) {
+pub async fn register<T: Backend>(payload: Json<Insert>, db: Data<Datastore<T>>) -> impl Responder {
+    if let Err(error) = db.set(payload.name.to_owned(), payload.0).await {
         return Response::Conflict(error.to_string()).message();
     }
 
     Response::Created.message()
 }
 
-pub async fn info(payload: Query<Parameter>, db: Data<DB>) -> impl Responder {
-    if let Ok(value) = db.get(&payload.service) {
+pub async fn info<T: Backend>(payload: Query<Parameter>, db: Data<Datastore<T>>) -> impl Responder {
+    if let Ok(value) = db.get(&payload.service).await {
         return HttpResponse::Ok().json(value);
     }
 
     Response::NotFound.message()
 }
 
-pub async fn deregister(payload: Query<Parameter>, db: Data<DB>) -> impl Responder {
-    if let Err(error) = db.del(&payload.service) {
+pub async fn deregister<T: Backend>(
+    payload: Query<Parameter>,
+    db: Data<Datastore<T>>,
+) -> impl Responder {
+    if let Err(error) = db.del(&payload.service).await {
         return HttpResponse::InternalServerError().json(format!("Error: {}", error));
     }
 
