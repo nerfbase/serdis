@@ -58,7 +58,7 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
     }?;
 
     // setup the datastore
-    let store = Datastore(SurrealDB(&db));
+    let store = Datastore(SurrealDB(db));
 
     // start the server
     net::init::<SurrealDB>(args, store).await?;

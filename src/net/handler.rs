@@ -23,7 +23,7 @@ pub async fn register<T: Backend>(payload: Json<Insert>, db: Data<Datastore<T>>)
 }
 
 pub async fn info<T: Backend>(payload: Query<Parameter>, db: Data<Datastore<T>>) -> impl Responder {
-    if let Ok(value) = db.get(&payload.service).await {
+    if let Ok(value) = db.get::<Insert>(&payload.service).await {
         return HttpResponse::Ok().json(value);
     }
 
@@ -34,7 +34,7 @@ pub async fn deregister<T: Backend>(
     payload: Query<Parameter>,
     db: Data<Datastore<T>>,
 ) -> impl Responder {
-    if let Err(error) = db.del(&payload.service).await {
+    if let Err(error) = db.del::<Insert>(&payload.service).await {
         return HttpResponse::InternalServerError().json(format!("Error: {}", error));
     }
 

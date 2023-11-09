@@ -6,9 +6,10 @@ extern crate surrealdb;
 
 use crate::{
     cnf::{DEFAULT_DATABASE_NAME, DEFAULT_NAMESPACE},
-    db::{backend::Backend, model::Insert},
+    db::backend::Backend,
 };
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use surrealdb::{
     engine::local::{Db, Mem},
@@ -30,12 +31,16 @@ pub async fn connect(
 }
 
 #[derive(Debug)]
-pub struct SurrealDB<'a>(pub &'a Surreal<Db>);
+pub struct SurrealDB(pub Surreal<Db>);
 
 #[async_trait]
-impl Backend for SurrealDB<'_> {
-    async fn set(&self, key: String, val: Insert) -> Result<(), Box<dyn Error>> {
-        let value: Result<Vec<Insert>, surrealdb::Error> = self.0.create(key).content(val).await;
+impl Backend for SurrealDB {
+    async fn set<V: Send + Serialize + for<'de> Deserialize<'de>>(
+        &self,
+        key: String,
+        val: V,
+    ) -> Result<(), Box<dyn Error>> {
+        let value: Result<Vec<V>, surrealdb::Error> = self.0.create(key).content(val).await;
 
         if let Err(err) = value {
             return Err(err.into());
@@ -44,8 +49,11 @@ impl Backend for SurrealDB<'_> {
         Ok(())
     }
 
-    async fn get(&self, key: &str) -> Result<Vec<Insert>, Box<dyn Error>> {
-        let value: Result<Vec<Insert>, surrealdb::Error> = self.0.select(key).await;
+    async fn get<V: Send + for<'de> Deserialize<'de>>(
+        &self,
+        key: &str,
+    ) -> Result<Vec<V>, Box<dyn Error>> {
+        let value: Result<Vec<V>, surrealdb::Error> = self.0.select(key).await;
 
         match value {
             Ok(val) => Ok(val),
@@ -53,8 +61,11 @@ impl Backend for SurrealDB<'_> {
         }
     }
 
-    async fn del(&self, key: &str) -> Result<(), Box<dyn Error>> {
-        let value: Result<Vec<Insert>, surrealdb::Error> = self.0.delete(key).await;
+    async fn del<V: Send + for<'de> Deserialize<'de>>(
+        &self,
+        key: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let value: Result<Vec<V>, surrealdb::Error> = self.0.delete(key).await;
 
         match value {
             Ok(_) => Ok(()),

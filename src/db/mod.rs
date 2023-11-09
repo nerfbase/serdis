@@ -8,6 +8,7 @@ pub mod model;
 
 use self::{backend::Backend, model::Insert};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 #[derive(Debug)]
@@ -18,16 +19,26 @@ impl<T> Backend for Datastore<T>
 where
     T: Backend + Sync + Send,
 {
-    async fn set(&self, key: String, val: Insert) -> Result<(), Box<dyn Error>> {
+    async fn set<V: Send + Serialize + for<'de> Deserialize<'de>>(
+        &self,
+        key: String,
+        val: V,
+    ) -> Result<(), Box<dyn Error>> {
         self.0.set(key, val).await
     }
 
-    async fn get(&self, key: &str) -> Result<Vec<Insert>, Box<dyn Error>> {
+    async fn get<V: Send + for<'de> Deserialize<'de>>(
+        &self,
+        key: &str,
+    ) -> Result<Vec<V>, Box<dyn Error>> {
         self.0.get(key).await
     }
 
-    async fn del(&self, key: &str) -> Result<(), Box<dyn Error>> {
-        self.0.del(key).await
+    async fn del<V: Send + for<'de> Deserialize<'de>>(
+        &self,
+        key: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        self.0.del::<V>(key).await
     }
 }
 
@@ -73,7 +84,7 @@ mod tests {
                 }),
             };
 
-            let backend = SurrealDB(&db);
+            let backend = SurrealDB(db);
             let store = Datastore(backend);
 
             // Test data insertion
@@ -81,15 +92,15 @@ mod tests {
             assert!(setter.is_ok());
 
             // Test data retrieval
-            let getter = store.get("service-xyz").await;
+            let getter = store.get::<Insert>("service-xyz").await;
             assert_eq!(getter.unwrap(), vec![model]);
 
             // Test data deletion
-            let delete = store.del("service-xyz").await;
+            let delete = store.del::<Insert>("service-xyz").await;
             assert!(delete.is_ok());
 
             // Test data retrieval after deletion
-            let get_deleted = store.get("service-xyz").await;
+            let get_deleted = store.get::<Insert>("service-xyz").await;
             assert_eq!(get_deleted.unwrap(), vec![]);
         });
     }
