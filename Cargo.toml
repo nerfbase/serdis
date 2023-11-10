@@ -13,6 +13,10 @@ clap = { version = "4.4.6", features = [
     "derive",
     "std",
 ], default-features = false }
+prost = { version = "0.12.1", features = [
+    "std",
+    "prost-derive",
+], default-features = false }
 rustls = { version = "0.20.7", default-features = false }
 rustls-pemfile = { version = "1.0.3", default-features = false }
 serde = { version = "1.0.190", features = [
@@ -24,4 +28,14 @@ serde_json = { version = "1.0.108", features = [
 ], default-features = false }
 surrealdb = { version = "1.0.0", features = [
     "kv-mem",
+], default-features = false }
+tonic = { version = "0.10.2", features = [
+    "codegen",
+    "prost",
+    "transport",
+], default-features = false }
+
+[build-dependencies]
+tonic-build = { version = "0.10.2", features = [
+    "prost",
 ], default-features = false }

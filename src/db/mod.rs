@@ -6,13 +6,15 @@ extern crate std;
 pub mod backend;
 pub mod model;
 
-use self::{backend::Backend, model::Insert};
+use self::backend::Backend;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 #[derive(Debug)]
-pub struct Datastore<T: Backend>(pub T);
+pub struct Datastore<T>(pub T)
+where
+    T: Backend + Send + Sync;
 
 #[async_trait]
 impl<T> Backend for Datastore<T>

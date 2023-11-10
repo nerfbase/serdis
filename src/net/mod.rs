@@ -4,6 +4,7 @@ extern crate actix_web;
 extern crate std;
 
 mod handler;
+pub mod rpc;
 mod tls;
 
 use self::handler::{deregister, info, register};

@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package serdis_rpc;
+
+service Serdis {
+  rpc Register (insert) returns (parameter);
+  rpc Deregister (deregister) returns (parameter);
+  rpc Info (info) returns (insert);
+}
+
+message metadata {
+  string env = 1;
+  string version = 2;
+  string region = 3;
+  string team = 4;
+  repeated string tags = 5;
+}
+
+message insert {
+  string name = 1;
+  string ip = 2;
+  uint32 port = 3;
+  string health = 4;
+  metadata metadata = 5;
+}
+
+message deregister {
+  string service =  1;
+}
+
+message info {
+  string service =  1;
+}
+
+message parameter {
+  string message = 1;
+}
