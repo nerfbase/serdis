@@ -3,8 +3,8 @@
 extern crate clap;
 extern crate std;
 
+use super::server::ServerCommands;
 use crate::{
-    cli::validator,
     cnf::LOGO,
     db::{
         backend::surreal_impl::{self, SurrealDB},
@@ -12,29 +12,11 @@ use crate::{
     },
     net,
 };
-use clap::{Args, ValueEnum};
-use std::{error::Error, path::PathBuf};
-
-#[derive(ValueEnum, Clone, Debug)]
-pub enum Mode {
-    Http,
-    Rpc,
-}
+use clap::Args;
+use std::error::Error;
 
 #[derive(Args, Debug)]
 pub struct StartCommandArguments {
-    #[arg(help = "Port number for the server")]
-    #[arg(long = "port", short = 'p')]
-    pub port: u16,
-
-    #[arg(help = "Path to the CERT certificate")]
-    #[arg(long = "cert", value_name = "FILE", value_parser = validator::file_exists)]
-    pub cert_file: Option<PathBuf>,
-
-    #[arg(help = "Path to the KEY certificate")]
-    #[arg(long = "key", value_name = "FILE", value_parser = validator::file_exists)]
-    pub key_file: Option<PathBuf>,
-
     #[arg(long)]
     #[arg(help = "Hide the startup banner")]
     #[arg(default_value_t = false)]
@@ -48,9 +30,8 @@ pub struct StartCommandArguments {
     #[arg(help = "Database namespace")]
     pub db_ns: Option<String>,
 
-    #[arg(long)]
-    #[arg(help = "Server mode")]
-    pub mode: Mode,
+    #[command(subcommand)]
+    pub command: ServerCommands,
 }
 
 pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
@@ -68,17 +49,15 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
     }?;
 
     // setup the datastore
-    let store = Datastore(SurrealDB(db));
+    let store = Datastore(SurrealDB(db).into());
 
     // start the server
-    match args.mode {
-        Mode::Http => {
-            net::http::init::<SurrealDB>(&args, store).await?;
-        }
-        Mode::Rpc => {
-            net::rpc::init(&args, store).await?;
-        }
+    match args.command {
+        ServerCommands::Http(args) => net::http::init::<SurrealDB>(&args, store.into()).await,
+        ServerCommands::Multi(args) => net::multi::init::<SurrealDB>(args, store.into()).await,
+        ServerCommands::Rpc(args) => net::rpc::init(&args, store.into()).await,
     }
+    .unwrap();
 
     println!("Server stopped. Bye!");
     Ok(())

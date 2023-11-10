@@ -4,6 +4,7 @@
 extern crate clap;
 extern crate std;
 
+pub mod server;
 pub mod start;
 mod validator;
 

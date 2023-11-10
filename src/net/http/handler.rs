@@ -12,9 +12,12 @@ use actix_web::{
     web::{Data, Json, Query},
     HttpResponse, Responder,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-pub async fn register<T: Backend>(payload: Json<Insert>, db: Data<Datastore<T>>) -> impl Responder {
+pub async fn register<T: Backend>(
+    payload: Json<Insert>,
+    db: Data<Arc<Datastore<T>>>,
+) -> impl Responder {
     if let Err(error) = db.set(payload.name.to_owned(), payload.0).await {
         return Response::Conflict(error.to_string()).message();
     }
@@ -22,7 +25,10 @@ pub async fn register<T: Backend>(payload: Json<Insert>, db: Data<Datastore<T>>)
     Response::Created.message()
 }
 
-pub async fn info<T: Backend>(payload: Query<Parameter>, db: Data<Datastore<T>>) -> impl Responder {
+pub async fn info<T: Backend>(
+    payload: Query<Parameter>,
+    db: Data<Arc<Datastore<T>>>,
+) -> impl Responder {
     if let Ok(value) = db.get::<Insert>(&payload.service).await {
         return HttpResponse::Ok().json(value);
     }
@@ -32,7 +38,7 @@ pub async fn info<T: Backend>(payload: Query<Parameter>, db: Data<Datastore<T>>)
 
 pub async fn deregister<T: Backend>(
     payload: Query<Parameter>,
-    db: Data<Datastore<T>>,
+    db: Data<Arc<Datastore<T>>>,
 ) -> impl Responder {
     if let Err(error) = db.del::<Insert>(&payload.service).await {
         return HttpResponse::InternalServerError().json(format!("Error: {}", error));

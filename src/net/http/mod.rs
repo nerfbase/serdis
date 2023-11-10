@@ -1,11 +1,14 @@
 //! HTTP Server
 
+extern crate actix_web;
+extern crate std;
+
 mod handler;
 
 use self::handler::{deregister, info, register};
 use super::tls::tls_cfg;
 use crate::{
-    cli::start::StartCommandArguments,
+    cli::server::ServerCommandArguments,
     db::{backend::Backend, Datastore},
 };
 use actix_web::{
@@ -13,22 +16,14 @@ use actix_web::{
     web::{self, Data},
     App, HttpResponse, HttpServer, Responder,
 };
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 pub async fn init<T: Backend>(
-    StartCommandArguments {
-        port,
-        cert_file,
-        key_file,
-        no_banner: _,
-        db_name: _,
-        db_ns: _,
-        mode: _,
-    }: &StartCommandArguments,
+    ServerCommandArguments { port, cert, key }: &ServerCommandArguments,
 
-    backend: Datastore<T>,
+    store: Arc<Datastore<T>>,
 ) -> Result<(), Box<dyn Error>> {
-    let store = Data::new(backend);
+    let store = Data::new(store);
     let server = HttpServer::new(move || {
         App::new()
             .service(
@@ -42,7 +37,7 @@ pub async fn init<T: Backend>(
             .app_data(store.clone())
     });
 
-    if let (Some(crt), Some(key)) = (&cert_file, &key_file) {
+    if let (Some(crt), Some(key)) = (&cert, &key) {
         let tls = tls_cfg(crt, key);
         server
             .bind_rustls(format!("localhost:{}", port), tls)

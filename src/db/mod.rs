@@ -9,10 +9,10 @@ pub mod model;
 use self::backend::Backend;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 #[derive(Debug)]
-pub struct Datastore<T>(pub T)
+pub struct Datastore<T>(pub Arc<T>)
 where
     T: Backend + Send + Sync;
 
@@ -46,8 +46,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use actix_web::rt::System;
-
     use crate::db::{
         backend::{
             surreal_impl::{self, SurrealDB},
@@ -56,6 +54,8 @@ mod tests {
         model::{Insert, MetaData},
         Datastore,
     };
+    use actix_web::rt::System;
+    use std::sync::Arc;
 
     #[test]
     fn test_db_connection() {
@@ -87,7 +87,7 @@ mod tests {
             };
 
             let backend = SurrealDB(db);
-            let store = Datastore(backend);
+            let store = Datastore(Arc::new(backend));
 
             // Test data insertion
             let setter = store.set("service-xyz".into(), model.clone()).await;

@@ -2930,6 +2930,7 @@ dependencies = [
  "actix-web",
  "async-trait",
  "clap",
+ "futures",
  "prost",
  "rustls 0.20.9",
  "rustls-pemfile",

@@ -7,24 +7,24 @@ mod serdis_rpc;
 
 use self::serdis_rpc::Parameter;
 use crate::{
-    cli::start::StartCommandArguments,
+    cli::server::ServerCommandArguments,
     db::{backend::Backend, Datastore},
 };
 use serdis_rpc::{
     serdis_server::{Serdis, SerdisServer},
     Deregister, Info, Insert,
 };
-use std::{error::Error, net::SocketAddr};
+use std::{error::Error, net::SocketAddr, sync::Arc};
 use tonic::{transport::Server, Request, Response, Status};
 
 #[derive(Debug)]
-pub struct SerdisRPC<T: Backend>(pub Datastore<T>);
+pub struct SerdisRPC<T: Backend>(pub Arc<Datastore<T>>);
 
 impl<T> SerdisRPC<T>
 where
     T: Backend,
 {
-    pub fn new(store: Datastore<T>) -> Self {
+    pub fn new(store: Arc<Datastore<T>>) -> Self {
         Self(store)
     }
 }
@@ -80,17 +80,13 @@ impl Parameter {
 }
 
 pub async fn init<T>(
-    StartCommandArguments {
+    ServerCommandArguments {
         port,
-        cert_file: _,
-        key_file: _,
-        no_banner: _,
-        db_name: _,
-        db_ns: _,
-        mode: _,
-    }: &StartCommandArguments,
+        cert: _,
+        key: _,
+    }: &ServerCommandArguments,
 
-    store: Datastore<T>,
+    store: Arc<Datastore<T>>,
 ) -> Result<(), Box<dyn Error>>
 where
     T: Backend + 'static,
