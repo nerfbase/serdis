@@ -11,6 +11,7 @@ actix-web = { version = "4.4.0", features = [
 async-trait = { version = "0.1.74", default-features = false }
 clap = { version = "4.4.6", features = [
     "derive",
+    "help",
     "std",
 ], default-features = false }
 prost = { version = "0.12.1", features = [
