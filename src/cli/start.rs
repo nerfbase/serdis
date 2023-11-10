@@ -12,8 +12,14 @@ use crate::{
     },
     net,
 };
-use clap::Args;
+use clap::{Args, ValueEnum};
 use std::{error::Error, path::PathBuf};
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum Mode {
+    Http,
+    Rpc,
+}
 
 #[derive(Args, Debug)]
 pub struct StartCommandArguments {
@@ -41,6 +47,10 @@ pub struct StartCommandArguments {
     #[arg(long)]
     #[arg(help = "Database namespace")]
     pub db_ns: Option<String>,
+
+    #[arg(long)]
+    #[arg(help = "Server mode")]
+    pub mode: Mode,
 }
 
 pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
@@ -61,7 +71,14 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
     let store = Datastore(SurrealDB(db));
 
     // start the server
-    net::http::init::<SurrealDB>(&args, store).await?;
+    match args.mode {
+        Mode::Http => {
+            net::http::init::<SurrealDB>(&args, store).await?;
+        }
+        Mode::Rpc => {
+            net::rpc::init(&args, store).await?;
+        }
+    }
 
     println!("Server stopped. Bye!");
     Ok(())

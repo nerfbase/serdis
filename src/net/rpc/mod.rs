@@ -87,6 +87,7 @@ pub async fn init<T>(
         no_banner: _,
         db_name: _,
         db_ns: _,
+        mode: _,
     }: &StartCommandArguments,
 
     store: Datastore<T>,

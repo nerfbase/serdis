@@ -23,6 +23,7 @@ pub async fn init<T: Backend>(
         no_banner: _,
         db_name: _,
         db_ns: _,
+        mode: _,
     }: &StartCommandArguments,
 
     backend: Datastore<T>,
