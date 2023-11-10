@@ -61,7 +61,8 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
     let store = Datastore(SurrealDB(db));
 
     // start the server
-    net::init::<SurrealDB>(args, store).await?;
+    net::http::init::<SurrealDB>(&args, store).await?;
 
+    println!("Server stopped. Bye!");
     Ok(())
 }

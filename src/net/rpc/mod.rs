@@ -1,4 +1,4 @@
-//! RPC
+//! RPC Server
 
 extern crate std;
 extern crate tonic;
@@ -6,7 +6,10 @@ extern crate tonic;
 mod serdis_rpc;
 
 use self::serdis_rpc::Parameter;
-use crate::{db::Datastore, net::Backend};
+use crate::{
+    cli::start::StartCommandArguments,
+    db::{backend::Backend, Datastore},
+};
 use serdis_rpc::{
     serdis_server::{Serdis, SerdisServer},
     Deregister, Info, Insert,
@@ -76,7 +79,18 @@ impl Parameter {
     }
 }
 
-pub async fn init<T>(port: u16, store: Datastore<T>) -> Result<(), Box<dyn Error>>
+pub async fn init<T>(
+    StartCommandArguments {
+        port,
+        cert_file: _,
+        key_file: _,
+        no_banner: _,
+        db_name: _,
+        db_ns: _,
+    }: &StartCommandArguments,
+
+    store: Datastore<T>,
+) -> Result<(), Box<dyn Error>>
 where
     T: Backend + 'static,
 {
