@@ -99,8 +99,14 @@ where
 
     Server::builder()
         .add_service(SerdisServer::new(rpc_service))
-        .serve(addr)
+        .serve_with_shutdown(addr, shutdown_signal())
         .await?;
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    actix_web::rt::signal::ctrl_c()
+        .await
+        .expect("failed to setup CTRL+C signal handler");
 }
