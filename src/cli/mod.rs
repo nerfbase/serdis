@@ -2,13 +2,16 @@
 //! Parse CLI Arguments
 
 extern crate clap;
+extern crate log;
 extern crate std;
 
 pub mod server;
 pub mod start;
 mod validator;
 
+use crate::cnf::log_cfg;
 use clap::{Parser, Subcommand};
+use log::error;
 use start::StartCommandArguments;
 use std::process::ExitCode;
 
@@ -26,13 +29,17 @@ pub enum Commands {
 }
 
 pub async fn init() -> ExitCode {
+    // init logger
+    log_cfg();
+
+    // parse args
     let args = Cli::parse();
     let output = match args.command {
         Commands::Start(args) => start::init(args).await,
     };
 
-    if let Err(e) = output {
-        eprintln!("{}", e);
+    if let Err(error) = output {
+        error!("{error}");
         ExitCode::FAILURE
     } else {
         ExitCode::SUCCESS

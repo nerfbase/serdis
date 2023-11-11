@@ -41,7 +41,7 @@ pub async fn deregister<T: Backend>(
     db: Data<Arc<Datastore<T>>>,
 ) -> impl Responder {
     if let Err(error) = db.del::<Insert>(&payload.service).await {
-        return HttpResponse::InternalServerError().json(format!("Error: {}", error));
+        return HttpResponse::InternalServerError().json(format!("Error: {error}"));
     }
 
     Response::Ok("Service deregistered successfully".to_string()).message()

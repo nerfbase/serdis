@@ -1,5 +1,6 @@
 //! RPC Server
 
+extern crate log;
 extern crate std;
 extern crate tonic;
 
@@ -10,6 +11,7 @@ use crate::{
     cli::server::ServerCommandArguments,
     db::{backend::Backend, Datastore},
 };
+use log::{error, info};
 use serdis_rpc::{
     serdis_server::{Serdis, SerdisServer},
     Deregister, Info, Insert,
@@ -91,19 +93,24 @@ pub async fn init<T>(
 where
     T: Backend + 'static,
 {
-    let addr = format!("[::1]:{}", port).parse::<SocketAddr>()?;
+    let addr = format!("[::1]:{port}").parse::<SocketAddr>()?;
     let rpc_service = SerdisRPC::new(store);
 
-    Server::builder()
+    info!("🌐 Started RPC Server");
+    match Server::builder()
         .add_service(SerdisServer::new(rpc_service))
         .serve_with_shutdown(addr, shutdown_signal())
-        .await?;
+        .await
+    {
+        Ok(_) => info!("🌐 Stopped RPC Server"),
+        Err(error) => error!("{error}"),
+    };
 
     Ok(())
 }
 
 async fn shutdown_signal() {
-    actix_web::rt::signal::ctrl_c()
-        .await
-        .expect("failed to setup CTRL+C signal handler");
+    if let Err(error) = actix_web::rt::signal::ctrl_c().await {
+        info!("failed to setup CTRL+C signal handler: {error}");
+    }
 }

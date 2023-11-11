@@ -4,6 +4,7 @@ extern crate rustls;
 extern crate rustls_pemfile;
 extern crate std;
 
+use log::error;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::{fs::File, io::BufReader};
@@ -32,7 +33,7 @@ pub fn _temp_tls_cfg() -> ServerConfig {
 
     // exit if no keys could be parsed
     if keys.is_empty() {
-        eprintln!("Could not locate PKCS 8 private keys.");
+        error!("Could not locate PKCS 8 private keys.");
         std::process::exit(1);
     }
 

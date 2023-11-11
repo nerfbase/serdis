@@ -1,6 +1,7 @@
 //! Start
 
 extern crate clap;
+extern crate log;
 extern crate std;
 
 use super::server::ServerCommands;
@@ -13,6 +14,7 @@ use crate::{
     net,
 };
 use clap::Args;
+use log::info;
 use std::error::Error;
 
 #[derive(Args, Debug)]
@@ -40,6 +42,8 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
         println!("{LOGO}");
     }
 
+    info!("Starting up!");
+
     // start the database
     let db = match (&args.db_name, &args.db_ns) {
         (Some(name), Some(ns)) => surreal_impl::connect(Some(name), Some(ns)).await,
@@ -48,8 +52,12 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
         (None, None) => surreal_impl::connect(None, None).await,
     }?;
 
+    info!("💾 Established database connection");
+
     // setup the datastore
     let store = Datastore(SurrealDB(db).into());
+
+    info!("💾 Started the datastore");
 
     // start the server
     match args.command {
@@ -59,6 +67,6 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
     }
     .unwrap();
 
-    println!("Server stopped. Bye!");
+    info!("✋ Server stopped. Bye!");
     Ok(())
 }
