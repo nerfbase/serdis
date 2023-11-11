@@ -27,14 +27,14 @@ where
     let rpc_store = store.clone();
 
     let http_args = ServerCommandArguments::new()
-        .port(http_port)
-        .cert(http_cert)
-        .key(http_key);
+        .with_port(http_port)
+        .with_cert(http_cert)
+        .with_key(http_key);
 
     let rpc_args = ServerCommandArguments::new()
-        .port(rpc_port)
-        .cert(rpc_cert)
-        .key(rpc_key);
+        .with_port(rpc_port)
+        .with_cert(rpc_cert)
+        .with_key(rpc_key);
 
     let http_handler = actix_web::rt::spawn(async move {
         super::http::init::<T>(&http_args, store).await.unwrap();

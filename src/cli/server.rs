@@ -74,17 +74,17 @@ impl ServerCommandArguments {
         }
     }
 
-    pub fn port(mut self, port: u16) -> Self {
+    pub fn with_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
 
-    pub fn cert(mut self, cert: Option<PathBuf>) -> Self {
+    pub fn with_cert(mut self, cert: Option<PathBuf>) -> Self {
         self.cert = cert;
         self
     }
 
-    pub fn key(mut self, key: Option<PathBuf>) -> Self {
+    pub fn with_key(mut self, key: Option<PathBuf>) -> Self {
         self.key = key;
         self
     }
