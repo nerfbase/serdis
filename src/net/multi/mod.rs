@@ -1,5 +1,6 @@
 //! Dual
 
+extern crate futures;
 extern crate std;
 
 use crate::{
