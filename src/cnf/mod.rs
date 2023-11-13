@@ -15,7 +15,7 @@ pub const LOGO: &str = r"
 pub const DEFAULT_HOST: &str = "localhost";
 
 pub fn log_cfg() {
-    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_LOG", "serdis=info");
 
     env_logger::builder()
         .target(env_logger::Target::Stdout)
