@@ -1,5 +1,6 @@
 //! RPC Server
 
+extern crate actix_web;
 extern crate log;
 extern crate std;
 extern crate tonic;
@@ -111,6 +112,6 @@ where
 
 async fn shutdown_signal() {
     if let Err(error) = actix_web::rt::signal::ctrl_c().await {
-        info!("failed to setup CTRL+C signal handler: {error}");
+        info!("⌨️ Failed to setup CTRL+C signal handler: {error}");
     }
 }

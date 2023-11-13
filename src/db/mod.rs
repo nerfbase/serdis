@@ -1,6 +1,7 @@
 //! Database
 
 extern crate async_trait;
+extern crate serde;
 extern crate std;
 
 pub mod backend;
@@ -60,7 +61,9 @@ mod tests {
     #[test]
     fn test_db_connection() {
         System::new().block_on(async {
-            let db = surreal_impl::connect(Some(&"name".into()), Some(&"ns".into())).await;
+            let db =
+                surreal_impl::connect(Some("name".into()), Some("ns".into()), Some("res".into()))
+                    .await;
             assert!(db.is_ok())
         });
     }
@@ -68,9 +71,10 @@ mod tests {
     #[test]
     fn test_db_insert_retrieve_delete() {
         System::new().block_on(async {
-            let db = surreal_impl::connect(Some(&"name".into()), Some(&"ns".into()))
-                .await
-                .unwrap();
+            let config =
+                surreal_impl::connect(Some("name".into()), Some("ns".into()), Some("res".into()))
+                    .await
+                    .unwrap();
 
             let model = Insert {
                 name: "service-xyz".into(),
@@ -86,7 +90,13 @@ mod tests {
                 }),
             };
 
-            let backend = SurrealDB(db);
+            let backend = SurrealDB {
+                connection: config.connection,
+                resource: config.resource,
+                namespace: config.namespace,
+                database_name: config.database_name,
+            };
+
             let store = Datastore(Arc::new(backend));
 
             // Test data insertion

@@ -26,11 +26,15 @@ pub struct StartCommandArguments {
 
     #[arg(long)]
     #[arg(help = "Database name")]
-    pub db_name: Option<String>,
+    pub database_name: Option<String>,
 
     #[arg(long)]
     #[arg(help = "Database namespace")]
-    pub db_ns: Option<String>,
+    pub database_namespace: Option<String>,
+
+    #[arg(long)]
+    #[arg(help = "Database resource")]
+    pub database_resource: Option<String>,
 
     #[command(subcommand)]
     pub command: ServerCommands,
@@ -42,20 +46,26 @@ pub async fn init(args: StartCommandArguments) -> Result<(), Box<dyn Error>> {
         println!("{LOGO}");
     }
 
-    info!("Starting up!");
+    info!("🚀 Starting up!");
 
-    // start the database
-    let db = match (&args.db_name, &args.db_ns) {
-        (Some(name), Some(ns)) => surreal_impl::connect(Some(name), Some(ns)).await,
-        (Some(name), None) => surreal_impl::connect(Some(name), None).await,
-        (None, Some(ns)) => surreal_impl::connect(None, Some(ns)).await,
-        (None, None) => surreal_impl::connect(None, None).await,
-    }?;
+    let config = surreal_impl::connect(
+        args.database_name,
+        args.database_namespace,
+        args.database_resource,
+    )
+    .await?;
 
     info!("💾 Established database connection");
 
     // setup the datastore
-    let store = Datastore(SurrealDB(db).into());
+    let db = SurrealDB {
+        connection: config.connection,
+        database_name: config.database_name,
+        namespace: config.namespace,
+        resource: config.resource,
+    };
+
+    let store = Datastore(db.into());
 
     info!("💾 Started the datastore");
 
